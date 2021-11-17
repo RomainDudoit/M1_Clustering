@@ -1,0 +1,306 @@
+---
+title: "Untitled"
+author: "DAVY .D"
+date: "3/30/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Importaton des données
+```{r}
+donnees <- read.csv("~/Desktop/Master_1/Clustering/Projet/student-por.csv",sep = ",", header=T, stringsAsFactors=TRUE)
+
+```
+ 
+
+## Exploration des données dans un premier temps
+```{r}
+#"Fjob", "failures","internet","freetime", "famrel"
+donnees$famrel = as.factor(donnees$famrel)
+plot(donnees$internet,donnees$famrel)
+
+
+```
+
+
+#SUJET : Étude de la Qualité des relations familiales des élèves
+
+QUESTIONS :
+1) Quelles sont les variablesqui expliquent au mieux la qualité de relation familiale des élèves ?
+2)Parmi ces variables (ou modalités), y'en a t'elles qui sont liés ?
+3)Quelles sont les modalités qui sont associées à une bonne qualité de relations familiale d'un élève ?
+
+## Stat desc sur les vars
+On vérifie que toutes les variables catégorielles sont de type "Factor" sinon l'ACM ne marchera pas.
+```{r}
+#summary(donnees)
+str(donnees)
+```
+
+## Réduction du nombre de variables pour une ACM moins volumineuse
+La  variable de reférence est la variable FAMREL : elle mesure sur une échelle allant de 
+1 à 5, le niveau de qualité des relations familiales d'un élève.
+
+Avant de procédé à une série de test de KHI2 entre certaines variables explicatives et la
+variable à expliquée FAMREL, nous allons d'office exclure certaines variables que nous 
+jugeons ne pas avoir d'impact sur la qualité des relations familiales. 
+Il s'agit de :  AGE, ABSENCES, HEALTH, G1,G2,G3.
+
+### Regroupement de modalités pour certaines variables
+CAUSE : Les effectifs sont souvent inférieurs à 5 dans les tableaux de contingence.
+```{r}
+#donnees$famrel[donnees$famrel==1 | donnees$famrel==2] = "famrel_Faible"
+#donnees$famrel[donnees$famrel==3] = "famrel_Moyen"
+#donnees$famrel[donnees$famrel==4 | donnees$famrel==5] = "famrel_Bon"
+
+donnees$famrel[donnees$famrel==1 | donnees$famrel==2 | donnees$famrel==3] = "famrel_Faible"
+donnees$famrel[donnees$famrel==4] = "famrel_Moyen"
+donnees$famrel[donnees$famrel==5] = "famrel_Bon"
+
+donnees$Medu[donnees$Medu==0 | donnees$Medu==1] = "Medu_Faible"
+donnees$Medu[donnees$Medu==2 | donnees$Medu==3] = "Medu_Moyen"
+donnees$Medu[donnees$Medu==4] = "Medu_Bon"
+
+donnees$Fedu[donnees$Fedu==0 | donnees$Fedu==1] = "Fedu_Faible"
+donnees$Fedu[donnees$Fedu==2 | donnees$Fedu==3] = "Fedu_Moyen"
+donnees$Fedu[donnees$Fedu==4] = "Fedu_Bon"
+
+donnees$traveltime[donnees$traveltime==1 ] = "traveltime_short"
+donnees$traveltime[donnees$traveltime==2 ] = "traveltime_reasonable"
+donnees$traveltime[donnees$traveltime==3| donnees$traveltime==4] = "traveltime_Long"
+
+donnees$studytime[donnees$studytime==1 ] = "studytime_short"
+donnees$studytime[donnees$studytime==2 ] = "studytime_reasonable"
+donnees$studytime[donnees$studytime==3| donnees$traveltime==4] = "studytime_Long"
+
+donnees$failures[donnees$failures==0 ] = "failures_0"
+donnees$failures[donnees$failures==1| donnees$failures==2 | donnees$failures==3] = "failures_AtLeast_1"
+
+donnees$freetime[donnees$freetime==1 | donnees$freetime==2] = "freetime_Faible"
+donnees$freetime[donnees$freetime==3] = "freetime_Moyen"
+donnees$freetime[donnees$freetime==4 | donnees$freetime==5] = "freetime_Eleve"
+
+donnees$goout[donnees$goout==1 | donnees$goout==2] = "goout_Faible"
+donnees$goout[donnees$goout==3] = "goout_Moyen"
+donnees$goout[donnees$goout==4 | donnees$goout==5] = "goout_Eleve"
+
+donnees$Dalc[donnees$Dalc==1 | donnees$Dalc==2] = "Dalc_Faible"
+donnees$Dalc[donnees$Dalc==3] = "Dalc_Moyen"
+donnees$Dalc[donnees$Dalc==4 | donnees$Dalc==5] = "Dalc_Eleve"
+
+donnees$Walc[donnees$Walc==1 | donnees$Walc==2] = "Walc_Faible"
+donnees$Walc[donnees$Walc==3] = "Walc_Moyen"
+donnees$Walc[donnees$Walc==4 | donnees$Walc==5] = "Walc_Eleve"
+
+
+#(nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')
+
+```
+
+
+
+
+### Croisements entre les variables explicatives et la variable à expliquer FAMREL (Quali/Quali)
+```{r}
+
+
+
+res1 = chisq.test(table(donnees$famrel,donnees$school))
+res2 = chisq.test(table(donnees$famrel,donnees$sex))
+res3 = chisq.test(table(donnees$famrel,donnees$address))
+res4 = chisq.test(table(donnees$famrel,donnees$famsize))
+res5 = chisq.test(table(donnees$famrel,donnees$Pstatus))
+res6 = chisq.test(table(donnees$famrel,donnees$Medu))
+res7 = chisq.test(table(donnees$famrel,donnees$Fedu))
+res8 = chisq.test(table(donnees$famrel,donnees$Mjob))
+res9 = chisq.test(table(donnees$famrel,donnees$Fjob))
+res10 = chisq.test(table(donnees$famrel,donnees$reason))
+
+
+res1 = chisq.test(table(donnees$famrel,donnees$guardian))
+res2 = chisq.test(table(donnees$famrel,donnees$traveltime))
+res3 = chisq.test(table(donnees$famrel,donnees$studytime))
+res4 = chisq.test(table(donnees$famrel,donnees$failures))#0.03191 #yes
+res5 = chisq.test(table(donnees$famrel,donnees$schoolsup))
+res6 = chisq.test(table(donnees$famrel,donnees$famsup))
+res7 = chisq.test(table(donnees$famrel,donnees$paid))
+res8 = chisq.test(table(donnees$famrel,donnees$activities))
+res9 = chisq.test(table(donnees$famrel,donnees$nursery))
+res10 = chisq.test(table(donnees$famrel,donnees$higher))
+
+
+res1 = chisq.test(table(donnees$famrel,donnees$internet))#0.03819 #yes
+res2 = chisq.test(table(donnees$famrel,donnees$romantic))
+res3 = chisq.test(table(donnees$famrel,donnees$freetime))#0.0008659  #yes
+res4 = chisq.test(table(donnees$famrel,donnees$goout))
+res5 = chisq.test(table(donnees$famrel,donnees$Dalc))
+res6 = chisq.test(table(donnees$famrel,donnees$Walc)) 
+
+
+res1
+res2
+res3
+res4
+res5
+res6
+res7
+res8
+res9
+res10
+
+
+```
+
+
+
+### Données après la sélection de variables
+```{r}
+donnees_Quali_Famil = donnees
+d1 = donnees_Quali_Famil[,c("school", "failures","internet","freetime", "famrel","G3")] #d ne contient que les variables qui ont une influence sur FAMREL et la variable FAMREL
+
+d = donnees_Quali_Famil[,c("Fjob", "failures","internet","freetime", "famrel")]
+```
+
+
+##  Réalisation d'une ACM
+Réalisation d'une ACM car il y a plusieurs variables qualitatives dans l'étude
+```{r message=FALSE,warning=FALSE}
+library("FactoMineR")
+library("factoextra")
+library("missMDA")
+library("corrplot")
+```
+
+```{r}
+#Mise au bon format des variables servant dans l'ACM
+d$failures = as.factor(d$failures)
+d$freetime = as.factor(d$freetime)
+d$famrel = as.factor(d$famrel)
+str(d)
+```
+
+```{r message=FALSE,warning=FALSE}
+res.mca <- MCA(d,quali.sup = 5, graph = FALSE)  #calcul de l'ACM 
+print(res.mca)
+```
+
+**Choix du nombre d'axes**
+```{r message=FALSE,warning=FALSE}
+eig.val <- get_eigenvalue(res.mca) 
+eig.val
+fviz_eig(res.mca, addlabels = TRUE, ylim = c(0, 30))
+
+```
+
+On applique la correction de Benzécri
+```{r message=FALSE,warning=FALSE}
+library("ExPosition")
+res.mca.benzecri <- epMCA(d[,-1], graph = FALSE, correction = "b")
+fviz_eig (res.mca.benzecri, ylim=c(0,100))
+
+```
+
+**Analyse des résultats des modalités sur le 1er axe**
+```{r message=FALSE,warning=FALSE}
+var <- get_mca_var(res.mca)
+coord<-var$coord[,1]
+contrib<-var$contrib[,1]
+cos2<-var$cos2[,1]
+display<-cbind(coord,contrib,cos2)
+display
+```
+
+**Analyse des résultats des modalités sur le 2ième axe**
+```{r message=FALSE,warning=FALSE}
+var <- get_mca_var(res.mca)
+coord<-var$coord[,2]
+contrib<-var$contrib[,2]
+cos2<-var$cos2[,2]
+display<-cbind(coord,contrib,cos2)
+display
+```
+
+
+```{r message=FALSE,warning=FALSE}
+fviz_mca_var(res.mca, col.var = "cos2",
+             gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+             title="",
+             repel = TRUE)
+
+```
+
+
+
+```{r message=FALSE,warning=FALSE}
+fviz_mca_var(res.mca, col.var = "contrib",
+             gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+             title="",
+             repel = TRUE)
+
+```
+
+
+
+**Analyse des résultats des individus**
+```{r message=FALSE,warning=FALSE}
+ind <- get_mca_ind (res.mca)
+coord<-ind$coord[,1]
+contrib<-ind$contrib[,1]
+cos2<-ind$cos2[,1]
+display<-cbind(coord,contrib,cos2)
+
+```
+
+
+```{r message=FALSE,warning=FALSE}
+fviz_mca_ind (res.mca, col.ind = "cos2",
+              title="Les pays selon leur respect des droits de l'Homme",
+              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+              repel =TRUE)
+```
+
+
+On termine par une représentation graphique simultanée des individus et des modalités
+```{r message=FALSE,warning=FALSE}
+#fviz_mca_biplot (res.mca, 
+#                 col.var="blue",col.ind = "contrib",
+#              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#              repel =TRUE)
+
+fviz_mca_biplot (res.mca, repel = TRUE) 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

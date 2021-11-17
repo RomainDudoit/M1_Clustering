@@ -1,0 +1,170 @@
+---
+title: "Quali_Fam_2"
+author: "DAVY .D"
+date: "4/16/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Importaton des données et prétraitements
+```{r}
+
+donnees <- read.csv("~/Desktop/Master_1/Clustering/Projet/student-por.csv",sep = ",", header=T, stringsAsFactors=TRUE)
+
+
+
+donnees$famrel[donnees$famrel==1 | donnees$famrel==2] = "famrel_Faible"
+donnees$famrel[donnees$famrel==3] = "famrel_Moyen"
+donnees$famrel[donnees$famrel==4 | donnees$famrel==5] = "famrel_Bon"
+
+donnees$Fjob = as.character(donnees$Fjob)
+donnees$Fjob[donnees$Fjob=="health" | donnees$Fjob=="teacher"] = "health_teacher"
+
+donnees$failures[donnees$failures==2 | donnees$failures==3] = "2+"
+
+donnees$Walc[donnees$Walc==1 | donnees$Walc==2] = "Walc_Faible"
+donnees$Walc[donnees$Walc==3] = "Walc_Moyen"
+donnees$Walc[donnees$Walc==4 | donnees$Walc==5] = "Walc_Bon"
+
+donnees$Medu[donnees$Medu==0 | donnees$Medu==1] = "Medu_Faible"
+donnees$Medu[donnees$Medu==2 | donnees$Medu==3] = "Medu_Moyen"
+donnees$Medu[donnees$Medu==4] = "Medu_Bon"
+
+donnees$Fedu[donnees$Fedu==0 | donnees$Fedu==1] = "Fedu_Faible"
+donnees$Fedu[donnees$Fedu==2 | donnees$Fedu==3] = "Fedu_Moyen"
+donnees$Fedu[donnees$Fedu==4] = "Fedu_Bon"
+
+donnees$health[donnees$health==1 | donnees$health==2] = "health_Faible"
+donnees$health[donnees$health==4 | donnees$health==5] = "health_Bon"
+donnees$health[donnees$health==3] = "health_Moyen"
+
+
+
+donnees$absences[donnees$absences>=10] = "Abs_Elevee"
+donnees$absences[donnees$absences>5 & donnees$absences!="Abs_Elevee"] = "Abs_Moyen"
+donnees$absences[donnees$absences!="Abs_Elevee" & donnees$absences!="Abs_Moyen"] = "Abs_Faible"
+
+#table(donnees$absences)
+
+donnees$famrel = as.factor(donnees$famrel)
+donnees$failures = as.factor(donnees$failures)
+donnees$Medu = as.factor(donnees$Medu)
+donnees$absences = as.factor(donnees$absences)
+
+
+```
+
+
+```{r}
+#str(donnees)
+table(donnees$famrel,donnees$failures)
+
+table(donnees$failures,donnees$Medu)
+
+table(donnees$failures,donnees$absences)
+```
+
+
+#Test de khi2 pour la détermmination d'une variable à croiser avec Famrel dans une AFC
+```{r}
+chisq.test(table(donnees$famrel,donnees$failures))
+
+chisq.test(table(donnees$failures,donnees$Medu))
+
+chisq.test(table(donnees$failures,donnees$absences))
+```
+
+
+
+# Réalisation d'une AFC avec les variables FAMREL et FAILURES
+##Ordonner les modalités des variables ordinales
+```{r}
+levels(donnees$failures)
+donnees$famrel <- factor(donnees$famrel, levels = c("famrel_Faible", "famrel_Moyen", "famrel_Bon"))
+
+donnees$failures <- factor(donnees$failures, levels = c("0","1","2+"))
+```
+
+
+
+## Construction du tableau de contingence
+```{r}
+contingence = table(donnees$famrel,donnees$failures)
+contingence
+plot(contingence)
+```
+##Construction des profils lignes
+Les profils lignes correspondent à la distribution du niveau d'echec scolaire pour chaque modalité
+de la variable mesurant la qualité des relations familiales.
+
+```{r}
+library(questionr)
+lprop(contingence,digits=1) # Profils lignes
+```
+
+
+##Construction des profils colonnes
+Les profils colonnes représentent la distribution de la qualité de relation familiale en 
+fonction du nombre de fois que l'éleve a redoublé
+```{r}
+library(questionr)
+cprop(contingence,digits=1) # Profils colonnes
+```
+
+## AFC
+```{r}
+res.ca = CA(contingence, graph = FALSE)
+```
+
+##Choix du nombre d'axe
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+eig.val <- get_eigenvalue(res.ca) 
+eig.val
+fviz_eig(res.ca, addlabels = TRUE, ylim = c(0, 50))
+
+```
+
+##Interprétation sémantique de l'axe 1 avec les profils lignes
+```{r}
+row<-get_ca_row(res.ca)#ON RÉCUPÈRE les résultats pour les profils lignes
+
+coord<-row$coord[,1]
+contrib<-row$contrib[,1]
+cos2<-row$cos2[,1]
+display<-cbind(coord,contrib,cos2)
+display
+```
+
+
+##Interprétation sémantique de l'axe 1 avec les profils colonnes
+```{r}
+col<-get_ca_col(res.ca)#ON RÉCUPÈRE les résultats pour les profils colonnes
+
+coord<-col$coord[,1]
+contrib<-col$contrib[,1]
+cos2<-col$cos2[,1]
+display<-cbind(coord,contrib,cos2)
+display
+```
+
+
+##Représentation graphique des profils colonnes sur le plan factoriel
+```{r}
+fviz_ca_col(res.ca, col.col = "cos2",
+title ="Profils colonnes selon leur cosinus²",
+gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+repel = TRUE)
+```
+
+##Représenation graphique simultanée des profils lignes et des profils colonnes
+```{r}
+fviz_ca_biplot (res.ca, repel = TRUE)
+```
+
+
+
+
+

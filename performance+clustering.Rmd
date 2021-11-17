@@ -1,0 +1,457 @@
+---
+title: "Untitled"
+author: "Romain DUDOIT"
+date: "March 19, 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library("FactoMineR")
+library("factoextra")
+library("ExPosition")
+```
+
+
+
+```{r}
+d1=read.table("student-mat.csv",sep=";",header=TRUE,stringsAsFactors = TRUE) # Mathématiques 
+d2=read.table("student-por.csv",sep=";",header=TRUE,stringsAsFactors = TRUE) # Portugais
+
+colnames(d1)[29] <- "HEALTH"
+colnames(d2)[29] <- "HEALTH"
+
+data=merge(d1,d2,by=c("school","sex","age","address","famsize","Pstatus","Medu","Fedu","Mjob","Fjob","reason","nursery","internet"))
+print(nrow(data)) # 382 students
+
+```
+
+```{r}
+str(d2)
+```
+
+
+```{r}
+# Conversion de certaines variables en facteur
+
+quali <- c('Medu','Fedu','traveltime','studytime','freetime','famrel','goout','Dalc','Walc','HEALTH')
+d2[,quali] <- lapply(d2[,quali] , factor)
+
+#quali <- d1[,names]
+
+#str(d1)
+```
+
+# Statistiques descriptives 
+
+
+```{r}
+par(mfrow=c(1,2)) # graphique sur 4 lignes et 3 colonnes 
+for (j in quali[1:2]){
+  plot(d2[,j],main=colnames(d1[j]))
+}
+
+# Medu = Niveau d'éducation de la mère ----> 
+# Fedu = Niveau d'éducation du père    ---->
+```
+
+```{r}
+plot(d2[,'Walc'])
+```
+
+
+ 
+```{r}
+is.fact <- sapply(d2, is.factor)
+factors.df <- d2[, is.fact]
+
+for (i in colnames(factors.df)){
+  print(i)
+  print(table(factors.df[,i]))
+  cat('\n')
+}
+```
+
+ 
+```{r}
+# Regroupement des modalités de certaines variables 
+
+d2$Medu.reg <- as.character(d2$Medu)
+d2$Medu.reg[d2$Medu=='0'] <- '1'
+
+d2$Fedu.reg <- as.character(d2$Fedu)
+d2$Fedu.reg[d2$Fedu=='0'] <- '1'
+
+d2$Dalc.reg <- as.character(d2$Dalc)
+d2$Dalc.reg[d2$Dalc=='5'] <- '4'
+
+
+d2$famrel.reg <- as.character(d2$famrel)
+d2$famrel.reg[d2$famrel=='1'] <- '2'
+
+d2$traveltime.reg <- as.character(d2$traveltime)
+d2$traveltime.reg[d2$traveltime=='4'] <- '3'
+
+#d2$Fjob.reg <- as.character(d2$Fjob)
+#d2$Fjob.reg[d2$Fjob=='5'] <- '2'
+
+d2[c('Medu.reg','Fedu.reg','Fjob','famrel.reg','Dalc.reg','traveltime.reg')] <- lapply(d2[c('Medu.reg','Fedu.reg','famrel.reg','Dalc.reg','traveltime.reg')], as.factor)
+```
+
+
+# Axes d'étude: 
+Variables suplémentaires : 
+- quantitative : age, absences, failures, G1, G2, G3
+- qualitative : sex, school, 
+
+
+# ACM 
+
+
+```{r}
+
+famille = c('famsize','famrel.reg','guardian','Pstatus','Fedu.reg','Medu.reg','Fjob','Mjob') # 8
+travail = c('activities','paid','studytime','freetime','schoolsup','higher','internet','nursery','address') # 9
+autre = c('Dalc.reg','Walc','goout','romantic','HEALTH') # 5 ## 22
+
+
+
+quali.supp= c("sex","school") # 27
+quanti.supp = c("failures","G1","G2","G3","absences") #33
+
+```
+
+# FAMILLE
+
+
+```{r}
+var_famille = c(famille,quali.supp,quanti.supp)
+d2.acm <- MCA(d2[,var_famille],quali.sup = c(9,10),quanti.sup = c(11:15))
+res.mca.benzecri <- epMCA(d2[,c(famille)], graph = FALSE, correction = "b")
+#la fonction epMCA n'accepte pas de variables supplémentaires mais cela n'a pas d'impact sur le calcul des valeurs propres et leur correction
+res.mca.benzecri$ExPosition.Data$t
+fviz_eig (res.mca.benzecri, ylim=c(0,100))
+```
+
+```{r}
+var <- get_mca_var(d2.acm) # var= variables 
+coord<-var$coord[,1] # coordonnées des modalités sur le 1er axe
+contrib<-var$contrib[,1] # contribution au 1er axe
+cos2<-var$cos2[,1] # cos2 au 1er axe
+display1_1<-cbind(coord,contrib,cos2)
+
+
+coord<-var$coord[,2] # coordonnées des modalités sur le 1er axe
+contrib<-var$contrib[,2] # contribution au 1er axe
+cos2<-var$cos2[,2] # cos2 au 1er axe
+display1_2<-cbind(coord,contrib,cos2)
+```
+
+
+```{r}
+fviz_mca_var(d2.acm, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, 
+             ggtheme = theme_minimal()
+             )
+```
+
+
+```{r}
+fviz_pca_ind (d2.acm, col.ind = "contrib",
+              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+              title="Elèves selon leurs caractéristiques familiales",
+              repel = TRUE)
+```
+
+```{r}
+fviz_mca_var(d2.acm, choice = "quanti.sup")
+```
+
+# TRAVAIL
+
+```{r}
+var_travail = c(travail,quali.supp,quanti.supp)
+d2.acm <- MCA(d2[,var_travail],quali.sup = c(10,11),quanti.sup = c(12:16))
+res.mca.benzecri <- epMCA(d2[,c(travail)], graph = FALSE, correction = "b")
+#la fonction epMCA n'accepte pas de variables supplémentaires mais cela n'a pas d'impact sur le calcul des valeurs propres et leur correction
+res.mca.benzecri$ExPosition.Data$t
+fviz_eig (res.mca.benzecri, ylim=c(0,100))
+```
+
+```{r}
+var <- get_mca_var(d2.acm) # var= variables 
+coord<-var$coord[,1] # coordonnées des modalités sur le 1er axe
+contrib<-var$contrib[,1] # contribution au 1er axe
+cos2<-var$cos2[,1] # cos2 au 1er axe
+display2_1<-cbind(coord,contrib,cos2)
+
+
+coord<-var$coord[,2] # coordonnées des modalités sur le 1er axe
+contrib<-var$contrib[,2] # contribution au 1er axe
+cos2<-var$cos2[,2] # cos2 au 1er axe
+display2_2<-cbind(coord,contrib,cos2)
+```
+
+```{r}
+fviz_mca_var(d2.acm, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, 
+             ggtheme = theme_minimal()
+             )
+```
+
+# Autre
+
+```{r}
+var_autre = c(autre,quali.supp,quanti.supp)
+d2.acm <- MCA(d2[,var_autre],quali.sup = c(6,7),quanti.sup = c(8:12))
+res.mca.benzecri <- epMCA(d2[,c(autre)], graph = FALSE, correction = "b")
+#la fonction epMCA n'accepte pas de variables supplémentaires mais cela n'a pas d'impact sur le calcul des valeurs propres et leur correction
+res.mca.benzecri$ExPosition.Data$t
+fviz_eig (res.mca.benzecri, ylim=c(0,100))
+```
+
+```{r}
+var <- get_mca_var(d2.acm) # var= variables 
+coord<-var$coord[,1] # coordonnées des modalités sur le 1er axe
+contrib<-var$contrib[,1] # contribution au 1er axe
+cos2<-var$cos2[,1] # cos2 au 1er axe
+display3_1<-cbind(coord,contrib,cos2)
+
+
+coord<-var$coord[,2] # coordonnées des modalités sur le 1er axe
+contrib<-var$contrib[,2] # contribution au 1er axe
+cos2<-var$cos2[,2] # cos2 au 1er axe
+display3_2<-cbind(coord,contrib,cos2)
+```
+
+
+```{r}
+fviz_mca_var(d2.acm, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, 
+             ggtheme = theme_minimal()
+             )
+```
+
+
+
+# Les notes sont elles liées au sexe ou l'école? 
+
+```{r}
+par(mfrow=c(1,2))
+plot(G3~sex,data=d2)
+plot(G3~school,data=d2)
+```
+
+```{r}
+par(mfrow=c(1,2))
+datah=d2[d2$sex=='M',]
+dataf=d2[d2$sex=='F',]
+
+plot(G3~school,data=dataf,main="femme")
+plot(G3~school,data=datah,main="homme")
+
+```
+
+```{r}
+
+var.test(G3~sex,data=d2)
+```
+
+
+```{r}
+t.test(G3~sex,data=d2,alternative='greater',var.equal=TRUE)
+```
+
+
+```{r}
+var.test(G3~school,data=d2)
+```
+
+```{r}
+t.test(G3~sex,data=d2,alternative='greater')
+```
+
+
+# ACM sur toutes les variables qualitatives 
+
+```{r}
+var= c(famille,travail,autre,quali.supp,quanti.supp)
+d2.acm <- MCA(d2[,var],ncp= 4, quali.sup = c(23,24),quanti.sup = c(25:29))
+res.mca.benzecri <- epMCA(d2[,c(famille)], graph = FALSE, correction = "b")
+#la fonction epMCA n'accepte pas de variables supplémentaires mais cela n'a pas d'impact sur le calcul des valeurs propres et leur correction
+res.mca.benzecri$ExPosition.Data$t
+fviz_eig (res.mca.benzecri, ylim=c(0,100))
+```
+
+**Analyse des résultats des modalités**
+```{r}
+var <- get_mca_var(d2.acm) # var= variables 
+coord<-var$coord[,1] # coordonnées des modalités sur le 1er axe
+contrib<-var$contrib[,1] # contribution au 1er axe
+cos2<-var$cos2[,1] # cos2 au 1er axe
+display1<-cbind(coord,contrib,cos2)
+```
+
+
+```{r}
+var <- get_mca_var(d2.acm) # var= variables 
+coord<-var$coord[,2] # coordonnées des modalités sur le 1er axe
+contrib<-var$contrib[,2] # contribution au 1er axe
+cos2<-var$cos2[,2] # cos2 au 1er axe
+display2<-cbind(coord,contrib,cos2)
+```
+
+
+```{r}
+fviz_mca_var(d2.acm, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, 
+             ggtheme = theme_minimal()
+             )
+```
+
+
+Pour l'ACM, les cos2 ne seront pas très élevés. Il expriment la qualité de représentation de la modalité sur l'axe compte tenu de l'inertie de l'axe. Comme les valeurs propres sont faibles, les valeurs des cos2 sont pas très elevées.  
+```{r}
+fviz_mca_ind(d2.acm, col.ind = "cos2", 
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE, 
+             ggtheme = theme_minimal())
+```
+
+# CAH
+
+```{r}
+res.hcpc <- HCPC(d2.acm,graph = FALSE,nb.clust = -1,method="ward") 
+res.hcpc_2 <- HCPC(d2.acm,graph = FALSE,nb.clust = 5,method="ward") 
+```
+
+
+```{r}
+plot(res.hcpc_2,choice="tree")
+```
+
+
+```{r}
+fviz_dend(res.hcpc, show_labels = FALSE)
+fviz_dend(res.hcpc_2, show_labels = FALSE)
+# typologie<-res.hcpc$data.clus[,9]
+```
+
+L'arbre suggère une coupure en 4 classes. 
+
+```{r}
+windows()
+fviz_pca_ind (d2.acm, select.ind = list(cos2 = 100), 
+              col.ind = typologie,
+              legend.title = "Classification des pays selon leur respect des droits humains",
+              repel = TRUE)
+
+```
+
+
+```{r}
+fviz_cluster(res.hcpc,
+             repel = TRUE,          
+             geom= "point",
+             main = "Factor map"
+             )
+```
+
+
+```{r}
+fviz_cluster(res.hcpc_2,
+             repel = TRUE,        
+             geom= "point",
+             main = "Factor map"
+             )
+```
+
+
+# Description par les variables
+```{r}
+display <- res.hcpc$desc.var$test.chi2
+display
+```
+
+Les variables qui caractérisent la plupart des clusters sont les variable Medu, Mjob, Fedu, et Walc 
+
+
+
+```{r}
+class_1 <- res.cah$desc.var$category$`1`
+class_2 <- res.cah$desc.var$category$`2`
+class_3 <- res.cah$desc.var$category$`3`
+class_4 <- res.cah$desc.var$category$`4`
+```
+
+
+
+# Description par les catégories
+```{r}
+res.hcpc$desc.var$category
+```
+
+
+```{r}
+res.hcpc$data.clus
+```
+
+
+```{r}
+res.cah$data.clust$clust # Affichage des groupes auxquels les individus on été associés. 
+```
+```{r}
+d2$class <- res.cah$data.clust$clust
+```
+
+
+```{r}
+data1=d2[d2$class=='1',]
+data2=d2[d2$class=='2',]
+data3=d2[d2$class=='3',]
+data4=d2[d2$class=='4',]
+```
+
+
+
+
+```{r}
+plot(G3~class,data = d2)
+```
+
+
+
+```{r}
+lm1 <- lm(G3~class, data=d2)
+```
+
+```{r}
+# echantillion gaussiens ? 
+shapiro.test(residuals(lm1)) # Les échantillions de chaque classe sont > 30 donc c'est bon !
+```
+
+```{r}
+# homogénéité des variances ? 
+bartlett.test(G3~class, data=d2)
+```
+
+
+
+```{r}
+library(car)
+Anova(lm1)
+```
+
+```{r}
+kruskal.test(G3~class, data=d2)
+```
+
+

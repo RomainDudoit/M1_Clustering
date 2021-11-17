@@ -1,0 +1,182 @@
+---
+title: "Untitled"
+author: "FRANCK"
+date: "10/04/2021"
+output: html_document
+---
+```{r}
+
+library("FactoMineR")
+library("factoextra")
+library("missMDA")
+library("corrplot")
+
+donnees <- read.csv("~/Desktop/Master_1/Clustering/Projet/student-por.csv",sep = ",", header=T, stringsAsFactors=TRUE)
+
+donnees$health[donnees$health==1 | donnees$health==2] = "Santé Faible"
+donnees$health[donnees$health==3] = "Santé Moyenne"
+donnees$health[donnees$health==4 | donnees$health==5] = "Santé Bonne"
+
+donnees$Medu[donnees$Medu==0 | donnees$Medu==1] = "Medu faible"
+
+donnees[,1]=as.factor(donnees[,1])
+donnees[,2]=as.factor(donnees[,2])
+donnees[,4]=as.factor(donnees[,4])
+donnees[,5]=as.factor(donnees[,5])
+donnees[,6]=as.factor(donnees[,6])
+donnees[,7]=as.factor(donnees[,7])
+donnees[,8]=as.factor(donnees[,8])
+donnees[,9]=as.factor(donnees[,9])
+donnees[,10]=as.factor(donnees[,10])
+donnees[,11]=as.factor(donnees[,11])
+donnees[,12]=as.factor(donnees[,12])
+donnees[,13]=as.factor(donnees[,13])
+donnees[,14]=as.factor(donnees[,14])
+donnees[,15]=as.factor(donnees[,15])
+donnees[,23]=as.factor(donnees[,23])
+donnees[,16]=as.factor(donnees[,16])
+donnees[,17]=as.factor(donnees[,17])
+donnees[,18]=as.factor(donnees[,18])
+donnees[,19]=as.factor(donnees[,19])
+donnees[,20]=as.factor(donnees[,20])
+donnees[,21]=as.factor(donnees[,21])
+donnees[,22]=as.factor(donnees[,22])
+donnees[,23]=as.factor(donnees[,23])
+donnees[,24]=as.factor(donnees[,24])
+donnees[,25]=as.factor(donnees[,25])
+donnees[,26]=as.factor(donnees[,26])
+donnees[,27]=as.factor(donnees[,27])
+donnees[,28]=as.factor(donnees[,28])
+donnees[,29]=as.factor(donnees[,29])
+donnees[,30]=as.factor(donnees[,30])
+
+table(donnees$health,donnees$sex)
+table(donnees$health,donnees$Medu)
+table(donnees$health,donnees$studytime)
+
+res1 = chisq.test(table(donnees$health,donnees$school))#non
+res2 = chisq.test(table(donnees$health,donnees$sex))#oui
+res3 = chisq.test(table(donnees$health,donnees$address))#non
+res4 = chisq.test(table(donnees$health,donnees$famsize))#non
+res5 = chisq.test(table(donnees$health,donnees$Pstatus))#non
+res6 = chisq.test(table(donnees$health,donnees$Medu))#oui
+res7 = chisq.test(table(donnees$health,donnees$Fedu))#non prob
+res8 = chisq.test(table(donnees$health,donnees$Mjob))#non
+res9 = chisq.test(table(donnees$health,donnees$Fjob))#non prob
+res10 = chisq.test(table(donnees$health,donnees$reason))#non
+
+
+res1 = chisq.test(table(donnees$health,donnees$guardian))#non prob
+res2 = chisq.test(table(donnees$health,donnees$traveltime))#non prob
+res3 = chisq.test(table(donnees$health,donnees$studytime))#oui
+res4 = chisq.test(table(donnees$health,donnees$failures))#non prob
+res5 = chisq.test(table(donnees$health,donnees$schoolsup))#non 
+res6 = chisq.test(table(donnees$health,donnees$famsup))#non 
+res7 = chisq.test(table(donnees$health,donnees$paid))#non prob
+res8 = chisq.test(table(donnees$health,donnees$activities))#non 
+res9 = chisq.test(table(donnees$health,donnees$nursery))#non
+res10 = chisq.test(table(donnees$health,donnees$higher))#non
+
+
+res1 = chisq.test(table(donnees$health,donnees$internet))#non 
+res2 = chisq.test(table(donnees$health,donnees$romantic))#non
+res3 = chisq.test(table(donnees$health,donnees$freetime))#non
+res4 = chisq.test(table(donnees$health,donnees$goout))#non
+res5 = chisq.test(table(donnees$health,donnees$Dalc))#non prob
+res6 = chisq.test(table(donnees$health,donnees$Walc)) #non 
+
+
+res1
+res2
+res3
+res4
+res5
+res6
+res7
+res8
+res9
+res10
+```
+
+
+#Réalisation d'une ACM
+ACM avec les variables SEX, Medu et Studytime. 
+La variable cible Health est mise en variable supplémentaire
+```{r}
+donnes1=donnees[,c(2,7,14,29)]
+res.mca <- MCA(donnes1, graph = FALSE,quali.sup = 4)
+print(res.mca) 
+```
+
+
+##Choix du nombre d'axes
+```{r}
+eig.val <- get_eigenvalue(res.mca) 
+eig.val
+fviz_eig(res.mca, addlabels = TRUE, ylim = c(0, 50))
+```
+
+En utilisant la correction de Benzécri
+```{r}
+library("ExPosition")
+res.mca.benzecri <- epMCA(donnes1[,-1], graph = FALSE, correction = "b")
+fviz_eig (res.mca.benzecri, ylim=c(0,100))
+```
+
+## Analyse des individus sur le premier axe
+```{r cars}
+ind <- get_mca_ind(res.mca) 
+
+coord<-ind$coord[,1]
+contrib<-ind$contrib[,1]
+cos2<-ind$cos2[,1]
+display<-cbind(coord,contrib,cos2)
+display
+
+dimdesc(res.mca, axes=c(1))
+
+```
+
+
+## Interprétation des modalités sur le premier axe
+```{r}
+var <- get_mca_var(res.mca) 
+coord<-var$coord[,1]
+contrib<-var$contrib[,1]
+cos2<-var$cos2[,1]
+display<-cbind(coord,contrib,cos2)
+display
+```
+
+
+
+## Interprétation des modalités sur le deuxième axe
+```{r}
+var <- get_mca_var(res.mca) 
+coord<-var$coord[,2]
+contrib<-var$contrib[,2]
+cos2<-var$cos2[,2]
+display<-cbind(coord,contrib,cos2)
+display
+```
+
+
+```{r}
+fviz_mca_var (res.mca, col.var = "contrib",
+              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+              repel =TRUE)
+
+```
+
+
+##Représentation graphique simultanée des individus et des modalités
+```{r}
+fviz_mca_biplot (res.mca, 
+                 col.var="blue",col.ind = "contrib",
+                 gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                 repel =TRUE)
+```
+
+
+
+
